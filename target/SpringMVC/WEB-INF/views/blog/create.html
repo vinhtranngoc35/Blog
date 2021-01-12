@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <title>Create new blog</title>
+</head>
+<body>
+<h1>Create new Blog</h1>
+<form>
+    <table>
+        <tr>
+            <td>NameBlog:</td>
+            <td><input id="name" ></td>
+        </tr>
+        <tr>
+            <td>Content:</td>
+            <td><input id="content"></td>
+        </tr>
+        <tr>
+            <td>Image:</td>
+            <td><input id="image"></td>
+        </tr>
+        <tr>
+            <td>Category:</td>
+            <td>
+                <select id="category">
+
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><input type="button" value="Create blog" onclick="return blogs.create()"></td>
+        </tr>
+    </table>
+</form>
+<p>
+    <a href="/blogs">Back to blog list</a>
+</p>
+</body>
+<script>
+    var categoryData =[];
+    var category=category||{};
+    category.lisCategories=function (){
+        $.ajax({
+            url: "http://localhost:8080/api/categories/",
+            method: "GET",
+            dataType: "json",
+            success: function (data) {
+                console.log(data)
+                categoryData = data;
+                $.each(data, function (i, v) {
+                    $('#category').append(
+                        "<option value='"+v.id+"'>" + v.name+ "</option>"
+                    );
+                });
+            }
+        });
+    }
+
+    category.findById = function (id){
+        for (let i =0; i<categoryData.length; i++){
+            if(id===categoryData[i].id){
+                return categoryData[i];
+            }
+        }
+        return null;
+    }
+
+    $(document).ready(function(){
+        category.lisCategories();
+    });
+
+    var blogs=blogs||{};
+    blogs.create = function () {
+        var blog={};
+        blog.name=$('#name').val();
+        blog.content=$('#content').val();
+        blog.image=$('#image').val();
+        blog.category=category.findById(parseInt($('#category').val()));
+        $.ajax({
+            url: "http://localhost:8080/api/blogs/create",
+            method : "POST", //"POST"
+            dataType:'json',
+            contentType:"application/json",
+            data : JSON.stringify(blog),
+            success : function(data){
+                alert("Blog has been Created successfully");
+
+            }
+        })
+        return false;
+    }
+</script>
+</html>

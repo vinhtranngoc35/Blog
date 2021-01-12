@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Show blog list</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.2/jquery.validate.min.js" integrity="sha512-UdIMMlVx0HEynClOIFSyOrPggomfhBKJE28LKl8yR3ghkgugPnG6iLfRfHwushZl1MOPSY6TsuBDGPK2X4zYKg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js" integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css" integrity="sha512-3pIirOrwegjM6erE5gPSwkUzO+3cTjpnV9lexlNZqvupR64iZBnOOTiiLPb9M36zpMScbmUNIcHUqKD47M719g==" crossorigin="anonymous" />
+    <style>
+        .error{
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+<h1>Blog list</h1>
+    <div class="row">
+        <div class="col-6">
+            <button type="button" class="btn btn-primary" onclick="blogs.reset()" data-toggle="modal" data-target="#myModal">
+                Create new blog
+            </button>
+        </div>
+        <div class="col-6 justify-content-right">
+            <form>
+
+                <label for="str">Search by name:</label><input id="str" type="text" />
+                <input type="button" class="btn btn-primary" value="Search" onclick="return blogs.showAllBlogs(1)"/>
+            </form>
+        </div>
+    </div>
+
+<!-- Button to Open the Modal -->
+
+
+<!-- The Modal -->
+<div class="modal" id="myModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formDemo">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title">Create Blog</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="hidden" id="id" value="0">
+                    <label for="nameBlog">Name Blog:</label>
+                    <input type="text" class="form-control"  placeholder="Enter name blog" id="nameBlog" name="nameBlog" required>
+                </div>
+                <div class="form-group">
+                    <label for="content">Content:</label>
+                    <input type="text" class="form-control" placeholder="Enter content" id="content" name="content" required>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category:</label>
+                    <select class="form-control" id="category" name="cagegory">
+                    </select>
+                </div>
+            </div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary" onclick="return blogs.save()">Save</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+<table class="table" id="dataTable">
+    <thead class="thead-dark">
+    <tr>
+        <td>Name</td>
+        <td>Content</td>
+        <td>Category</td>
+        <td>Action</td>
+    </tr>
+    </thead>
+    <tbody id="showListBlog">
+    </tbody>
+</table>
+    <nav aria-label="Page navigation example">
+        <ul class="pagination justify-content-center" id="pageable">
+        </ul>
+    </nav>
+</div>
+</body>
+<script type="text/javascript">
+    var blogs = blogs || {};
+    var categoryData =[];
+    var category=category||{};
+    blogs.showAllBlogs = function(page) {
+        let search = $('#str').val();
+        $.ajax({
+            url: "http://localhost:8080/api/blogs?page="+page+"&search="+search,
+            method: "GET",
+            dataType: "json",
+            success: function (data) {
+                $('#showListBlog').empty();
+                let totalPage = parseInt(data.totalPages);
+                console.log(totalPage);
+                $('#pageable').empty('');
+                for(let i =0; i<totalPage; i++){
+                    if(data.pageable.pageNumber===i){
+                        $('#pageable').append(`<li class="page-item disabled"><a class="page-link" href="#">${i+1}</a></li>`)
+                    }else {
+                        $('#pageable').append(`<li class="page-item"><a class="page-link" href="#" onclick="blogs.showAllBlogs(${i+1})">${i+1}</a></li>`)
+                    }
+
+                }
+                $.each(data.content, function (i, v) {
+                    $('#showListBlog').append(
+                        "<tr>" +
+                        "<td>" + v.name + "</td>" +
+                        "<td>" + v.content + "</td>" +
+                        "<td>" + v.category.name + "</td>" +
+                        "<td>" +
+                        "<a class='btn btn-primary' href='#' data-toggle=\"modal\" data-target=\"#myModal\" onclick='blogs.getBlogById("+v.id+")'>Edit</a>" +
+                        "<a class='btn btn-danger' href='#' onclick='blogs.delete("+v.id+")'>Delete</a>" +
+                        "</td>" +
+                        "</tr>"
+                    );
+
+                });
+            }
+        });
+    };
+
+    blogs.remove = function(id){
+        $.ajax({
+            url : "http://localhost:8080/api/blogs/" + id,
+            method : "DELETE",
+            dataType:'json',
+            success : function(data){
+                blogs.showAllBlogs(1);
+            }
+        });
+    }
+
+    blogs.getBlogById = function(id){
+        $.ajax({
+            url : "http://localhost:8080/api/blogs/" + id,
+            method : "GET", //"POST"
+            dataType:'json',
+            success : function(data){
+                $('#formDemo').validate().resetForm();
+                $('#nameBlog').val(data.name);
+                $('#content').val(data.content);
+                $('#id').val(data.id);
+                $('#category').val(data.category.id);
+            }
+        });
+    }
+
+
+    category.lisCategories=function (){
+        $.ajax({
+            url: "http://localhost:8080/api/categories/",
+            method: "GET",
+            dataType: "json",
+            success: function (data) {
+                categoryData = data;
+                $.each(data, function (i, v) {
+                        $('#category').append(
+                            "<option value='"+v.id+"'>" + v.name+ "</option>"
+                        );
+                });
+
+            }
+        });
+    }
+
+    blogs.save=function (){
+        if($('#formDemo').valid()){
+        let blog = {};
+        blog.name = $('#nameBlog').val();
+        blog.content = $('#content').val();
+        blog.category=category.findById(parseInt($('#category').val()));
+            if($('#id').val()==="0") {
+                blog.category = category.findById(parseInt($('#category').val()));
+                $.ajax({
+                    url: "http://localhost:8080/api/blogs/",
+                    method: "POST",
+                    dataType: 'json',
+                    contentType: "application/json",
+                    data: JSON.stringify(blog),
+                    success: function (data) {
+                        if(data.code === 2){
+                            $('#myModal').modal('hide');
+                            toastr.success("Created blog success");
+                            blogs.showAllBlogs(1);
+                        }else {
+                            data.stringListMessage.map(e =>toastr.error(e))
+
+                        }
+                    }
+                });
+            }else {
+                blog.id=$('#id').val();
+                $.ajax({
+                    url : "http://localhost:8080/api/blogs/",
+                    method : "PUT",
+                    dataType:'json',
+                    contentType:"application/json",
+                    data : JSON.stringify(blog),
+                    success : function(data){
+                        if(data.code === 2){
+                            $('#myModal').modal('hide');
+                            toastr.success("Updated blog success");
+                            blogs.showAllBlogs(1);
+                        }else {
+                            data.stringListMessage.map(e =>toastr.error(e));
+                        }
+                    }
+                });
+            }
+         }
+        return false;
+    }
+
+    blogs.delete = function(id){
+        bootbox.confirm({
+
+            message: "Do you want delete this blog?",
+            buttons: {
+                cancel: {
+                    label: '<i class="fa fa-times"></i> No'
+                },
+                confirm: {
+                    label: '<i class="fa fa-check"></i> Yes'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    $.ajax({
+                        url: `http://localhost:8080/api/blogs/${id}`,
+                        method: "DELETE",
+                        contentType: 'json',
+                        success: function (data) {
+                            toastr.warning('Deleted blog');
+                            blogs.showAllBlogs(1);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    blogs.reset = function(){
+        $('#formDemo').validate().resetForm();
+        $('#id').val(0);
+        $('#nameBlog').val('');
+        $('#content').val('');
+        $("#category").val($("#category option:first").val());
+    }
+
+    category.findById = function (id){
+       return  categoryData.filter(v => v.id === id)[0];
+    }
+    $(document).ready(function(){
+        blogs.showAllBlogs(1);
+        category.lisCategories();
+        $('#formDemo').validate({
+            rules: {
+                nameBlog: "required",
+                content: "required",
+            },
+            messages: {
+                nameBlog: "Please enter name blog!!!",
+                content: "Please enter content blog!!!",
+            }
+        });
+    });
+
+</script>
+</html>
